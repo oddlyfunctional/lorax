@@ -10,9 +10,12 @@ module Lorax
 
     def apply!(document)
       # TODO: patch nokogiri to make inserting node copies efficient
-      parent = document.at_xpath(xpath)
+      parent = document.at_xpath(node.parent.path)
       raise NodeNotFoundError, xpath unless parent
-      insert_node(node.dup, parent, position)
+
+      new_node = Nokogiri::XML("<ins></ins>").child
+      new_node.add_child(node.dup)
+      insert_node(new_node, parent, node.parent.children.index(node))
     end
 
     def descriptor

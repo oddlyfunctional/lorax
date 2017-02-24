@@ -14,7 +14,9 @@ module Lorax
       if match
         if ! match.perfect?
           if match_set.signature1.monogram(match.pair.first) != match_set.signature2.monogram(match.pair.last)
-            delta_set.add ModifyDelta.new(match.pair.first, match.pair.last)
+            node1 = match.pair.first
+            node2 = match.pair.last
+            delta_set.add ModifyDelta.new(node1, node2)
           end
           node.children.each { |child| generate_inserts_and_moves_recursively delta_set, match_set, child }
         end
@@ -29,7 +31,7 @@ module Lorax
         return if match.perfect?
         node.children.each { |child| generate_deletes_recursively delta_set, match_set, child }
       else
-        delta_set.add DeleteDelta.new(node)
+        delta_set.add DeleteDelta.new(node, node.parent.path, node.parent.children.index(node))
       end
     end
   end

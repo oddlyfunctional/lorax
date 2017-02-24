@@ -1,6 +1,6 @@
 module Lorax
   class ModifyDelta < Delta
-    attr_accessor :node1, :node2
+    attr_accessor :node1, :xpath1, :position1, :node2, :xpath2
 
     def initialize(node1, node2)
       @node1 = node1
@@ -8,27 +8,24 @@ module Lorax
     end
 
     def apply!(doc)
-      node = doc.at_xpath(node1.path)
-      raise NodeNotFoundError, node1.path unless node
+      target1 = doc.at_xpath(node1.path)
+      parent1 = doc.at_xpath(node1.parent.path)
+      raise NodeNotFoundError, node1.path unless target1
+      raise NodeNotFoundError, xpath unless parent1
 
-      if node.text? || node.type == Nokogiri::XML::Node::CDATA_SECTION_NODE
-        node.content = node2.content
-      else
-        attributes = attributes_hash(node)
-        attributes2 = attributes_hash(node2)
-        if attributes != attributes2
-          attributes .each { |name, value| node.remove_attribute(name) }
-          attributes2.each { |name, value| node[name] = value }
-        end
-      end
+      target1.unlink
 
-      if node1.path != node2.path
-        position = node2.parent.children.index(node2)
-        target_parent = doc.at_xpath(node2.parent.path)
-        raise NodeNotFoundError, node2.parent.path unless target_parent
-        node.unlink
-        insert_node(node, target_parent, position)
-      end
+      parent2 = doc.at_xpath(node2.parent.path)
+      raise NodeNotFoundError, xpath unless parent2
+
+      new_node1 = Nokogiri::XML("<del></del>").child
+      new_node1.add_child(node1.dup)
+
+      new_node2 = Nokogiri::XML("<ins></ins>").child
+      new_node2.add_child(node2.dup)
+
+      insert_node(new_node1, parent1, node1.parent.children.index(node1))
+      insert_node(new_node2, parent2, node2.parent.children.index(node2))
     end
 
     def descriptor
